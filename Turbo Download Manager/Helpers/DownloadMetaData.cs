@@ -8,7 +8,7 @@ namespace Turbo_Download_Manager.Helpers
 {
     public struct DownloadMetaData
     {
-        public int startByte, chunkLength;
+        public long startByte, chunkLength;
         public string fileName;
         public DownloadJob job;
     };

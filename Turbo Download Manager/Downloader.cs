@@ -36,49 +36,47 @@ namespace Turbo_Download_Manager
         {
             double progress = 0;
             int BUFF_SIZE = 4096;
-            int start = chunckMetaData.startByte;
+            long start = chunckMetaData.startByte;
             byte[] buffer = new byte[chunckMetaData.chunkLength];
-            int lastSrcIndex = 0;
+            int lastSrcIndex = 0, curResponseLength = 0;
 
             while (chunckMetaData.startByte < (start + chunckMetaData.chunkLength))
             {
                 try
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, "");
-                    BUFF_SIZE = Math.Min(BUFF_SIZE, (start + chunckMetaData.chunkLength) - chunckMetaData.startByte);
-                    request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(chunckMetaData.startByte, chunckMetaData.startByte + BUFF_SIZE);
+                    request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(chunckMetaData.startByte, chunckMetaData.startByte + Math.Min(BUFF_SIZE, (start + chunckMetaData.chunkLength) - chunckMetaData.startByte)-1);
                     var response = await _httpClient.SendAsync(request);
-                    byte[] temp = await response.Content.ReadAsByteArrayAsync();
-                    //BUFF_SIZE = Math.Min(BUFF_SIZE, chunckMetaData.chunkLength - lastSrcIndex);
-                    Array.Copy(temp, 0, buffer, lastSrcIndex, BUFF_SIZE);
-                    lastSrcIndex += BUFF_SIZE;
+                    if(response.StatusCode == System.Net.HttpStatusCode.PartialContent)
+                    {
+                        byte[] temp = await response.Content.ReadAsByteArrayAsync();
+                        curResponseLength = temp.Length;
+                        Array.Copy(temp, 0, buffer, lastSrcIndex, temp.Length);
+                        lastSrcIndex += temp.Length;
 
-                    chunckMetaData.startByte += BUFF_SIZE;
-                    progress = ((double)chunckMetaData.startByte - (double)start) / ((double)chunckMetaData.chunkLength) * 100.0;
-                    lblDownloadPrgrs.Invoke(new Action(() =>
+                        chunckMetaData.startByte += temp.Length;
+                        progress = ((double)chunckMetaData.startByte - (double)start) / ((double)chunckMetaData.chunkLength) * 100.0;
+                        lblDownloadPrgrs.Invoke(new Action(() =>
+                        {
+                            lblDownloadPrgrs.Text = $"Downloading {Math.Round(progress, 2)}%";
+                        }));
+                        downloadProgressBar.Invoke(new Action(() =>
+                        {
+                            downloadProgressBar.Value = (int)Math.Round(progress, 2);
+                        }));
+                    }
+                    else
                     {
-                        lblDownloadPrgrs.Text = $"Downloading {Math.Round(progress, 2)}%";
-                    }));
-                    downloadProgressBar.Invoke(new Action(() =>
-                    {
-                        downloadProgressBar.Value = (int)Math.Round(progress, 2);
-                    }));
+                        break;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error Occured while downloading the file: {ex.Message}", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Error Occured while downloading the file: {ex.Message}, lastSrcIndex: {lastSrcIndex}, chuncLength: {chunckMetaData.chunkLength}, curResponseLength: {curResponseLength}", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
 
             File.WriteAllBytes(chunckMetaData.fileName, buffer);
-
-            //using (var sw = new StreamWriter(chunckMetaData.fileName, true))
-            //{
-            //    foreach (var singleByte in buffer)
-            //    {
-            //        await sw.WriteAsync((char)singleByte);
-            //    }
-            //}
 
             chunckMetaData.job.IsCompeleted = true;
         }
@@ -87,7 +85,7 @@ namespace Turbo_Download_Manager
         {
             const int MAX_THREADS = 10;
             long totalLength = 1;
-            float BUFF_SIZE = 4096;
+            double BUFF_SIZE = 4096;
 
             var request = new HttpRequestMessage(HttpMethod.Head, "");
             request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, (int)BUFF_SIZE);
@@ -96,36 +94,27 @@ namespace Turbo_Download_Manager
             if (response.StatusCode == System.Net.HttpStatusCode.PartialContent)
             {
                 totalLength = response.Content.Headers.ContentRange.Length ?? 1;
-                _fileExtension = Utils.GetExtensionFromMimeType(response.Content.Headers.ContentType.MediaType);
+                _fileExtension = Utils.GetAccurateExtension(Utils.GetExtensionFromMimeType(response.Content.Headers.ContentType.MediaType), _downloadUri.OriginalString);
 
-                int neededThreadsCount = ((int)totalLength / BUFF_SIZE) > MAX_THREADS ? MAX_THREADS : ((int)totalLength / (int)BUFF_SIZE);
-
-                if (neededThreadsCount == MAX_THREADS)
-                {
-                    neededThreadsCount = MAX_THREADS;
-                    BUFF_SIZE = (float)totalLength / (float)MAX_THREADS;
-                }
-                else
-                {
-                    BUFF_SIZE = (float)totalLength / (float)neededThreadsCount;
-                }
+                BUFF_SIZE = (double)totalLength / (double)MAX_THREADS;
 
                 lblThreadsCount.Invoke(new Action(() =>
                 {
-                    lblThreadsCount.Text = $"Threads Count: {neededThreadsCount}/File Size: {Math.Round(((double)totalLength)/1024.0/1024.0, 2)} MB/File Type:  {_fileExtension}";
+                    lblThreadsCount.Text = $"Threads Count: {MAX_THREADS}/File Size: {Math.Round(((double)totalLength) / 1024.0 / 1024.0, 2)} MB/File Type:  {_fileExtension}";
                 }));
 
-                Invoke(new Action(() => {
+                Invoke(new Action(() =>
+                {
                     Text = $"Downloading {Utils.GetFileName(_downloadUri)}";
                 }));
 
-                for (int thread_counter = 0; thread_counter < neededThreadsCount; thread_counter++)
+                for (int thread_counter = 0; thread_counter < MAX_THREADS; thread_counter++)
                 {
                     var downloadJob = new DownloadJob();
                     var chunckMetaData = new DownloadMetaData
                     {
-                        chunkLength = (int)BUFF_SIZE,
-                        startByte = (int)BUFF_SIZE * thread_counter,
+                        chunkLength = (int)Math.Round(BUFF_SIZE),
+                        startByte = ((int)Math.Round(BUFF_SIZE)) * thread_counter,
                         fileName = Path.Combine(_tempFilesParentFolder, Guid.NewGuid().ToString("N")),
                         job = downloadJob
                     };
@@ -139,7 +128,7 @@ namespace Turbo_Download_Manager
 
                 downloadTasksTracker.Enabled = true;
             }
-            else if(response.StatusCode == System.Net.HttpStatusCode.OK)
+            else if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
                 MessageBox.Show("Error: The Server does not support byte chuncking", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.Close();
@@ -151,9 +140,9 @@ namespace Turbo_Download_Manager
             }
         }
 
-        private async void downloadTasksTracker_Tick(object sender, EventArgs e)
+        private void downloadTasksTracker_Tick(object sender, EventArgs e)
         {
-            if(!_isTickEventProcessing)
+            if (!_isTickEventProcessing)
             {
                 if (_downloadJobs.Where(db => db.IsCompeleted).Count() == _downloadJobs.Count)
                 {
@@ -192,7 +181,7 @@ namespace Turbo_Download_Manager
                         this.Close();
                         downloadComplete.Show();
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         MessageBox.Show($"Error Occured while saving the file {ex.Message}", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
@@ -202,6 +191,11 @@ namespace Turbo_Download_Manager
                     }
                 }
             }
+        }
+
+        private void btnCancel_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
     }
 }

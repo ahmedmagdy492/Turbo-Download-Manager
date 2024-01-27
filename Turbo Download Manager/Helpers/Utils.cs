@@ -11,8 +11,23 @@ namespace Turbo_Download_Manager.Helpers
         public static string GetFileName(Uri url)
         {
             string urlPath = url.AbsolutePath;
-            string[] pathes = urlPath.Split("/");
-            return Path.GetFileNameWithoutExtension(pathes[pathes.Length - 1]);
+            string[] pathChuncks = urlPath.Split("/");
+            return Path.GetFileNameWithoutExtension(pathChuncks[pathChuncks.Length - 1]);
+        }
+
+        public static string GetAccurateExtension(string curExt, string fileName)
+        {
+            switch(curExt)
+            {
+                case ".bin":
+                    if (fileName.EndsWith(".exe"))
+                        return ".exe";
+                    if (fileName.EndsWith(".msi"))
+                        return ".msi";
+                    break;
+            }
+
+            return curExt;
         }
 
         public static string GetExtensionFromMimeType(string mimeType)

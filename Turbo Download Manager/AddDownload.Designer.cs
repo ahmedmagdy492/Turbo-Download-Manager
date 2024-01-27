@@ -69,8 +69,11 @@
             Controls.Add(txtDownloadLink);
             Controls.Add(label1);
             Font = new Font("Segoe UI", 13F);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(4);
+            MaximizeBox = false;
+            MinimizeBox = false;
             Name = "AddDownload";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Download a File";

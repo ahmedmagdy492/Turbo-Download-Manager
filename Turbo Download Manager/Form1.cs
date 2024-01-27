@@ -1,17 +1,24 @@
+using Turbo_Download_Manager.Database;
 using Turbo_Download_Manager.Helpers;
+using Turbo_Download_Manager.Repository;
 
 namespace Turbo_Download_Manager
 {
     public partial class TurboMgr : Form
     {
+        private readonly AppDBContext _appDBContext;
+        private readonly IFileDownloadRepository _fileDownloadRepository;
+
         public TurboMgr()
         {
             InitializeComponent();
+            _appDBContext = new AppDBContext();
+            _fileDownloadRepository = new FileDownloadRepository(_appDBContext);
         }
 
         private void downloadAFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AddDownload addDownload = new AddDownload();
+            AddDownload addDownload = new AddDownload(_fileDownloadRepository);
             addDownload.Show();
         }
 
@@ -40,6 +47,16 @@ namespace Turbo_Download_Manager
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Environment.Exit(0);
+        }
+
+        private void exitToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            Environment.Exit(0);
+        }
+
+        private async void TurboMgr_Load(object sender, EventArgs e)
+        {
+            downloads.DataSource = (await _fileDownloadRepository.GetDownloadsBy()).Select(f => new { f.FileName, f.DownloadUrl, f.SavePath, f.StartDownloadDateTime }).ToList();
         }
     }
 }
