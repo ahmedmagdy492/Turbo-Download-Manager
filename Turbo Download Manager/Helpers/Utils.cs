@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Turbo_Download_Manager.Helpers
 {
@@ -12,7 +13,12 @@ namespace Turbo_Download_Manager.Helpers
         {
             string urlPath = url.AbsolutePath;
             string[] pathChuncks = urlPath.Split("/");
-            return Path.GetFileNameWithoutExtension(pathChuncks[pathChuncks.Length - 1]);
+            string fileName = Path.GetFileNameWithoutExtension(pathChuncks[pathChuncks.Length - 1]);
+            if(fileName.Length >= 255)
+            {
+                fileName = fileName.Substring(0, 254);
+            }
+            return HttpUtility.UrlDecode(fileName);
         }
 
         public static string GetAccurateExtension(string curExt, string fileName)
