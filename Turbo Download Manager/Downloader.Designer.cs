@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Downloader));
             lblDownloadPrgrs = new Label();
             downloadProgressBar = new ProgressBar();
             btnPause = new Button();
@@ -98,6 +99,7 @@
             Controls.Add(lblDownloadPrgrs);
             Font = new Font("Segoe UI", 13F);
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(4);
             MaximizeBox = false;
             Name = "Downloader";

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AddDownload));
             label1 = new Label();
             txtDownloadLink = new TextBox();
             btnDownload = new Button();
@@ -68,6 +69,7 @@
             Controls.Add(txtDownloadLink);
             Controls.Add(label1);
             Font = new Font("Segoe UI", 13F);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(4);
             Name = "AddDownload";
             StartPosition = FormStartPosition.CenterScreen;

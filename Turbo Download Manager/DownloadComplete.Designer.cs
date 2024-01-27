@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DownloadComplete));
             label1 = new Label();
             btnOk = new Button();
             btnClose = new Button();
@@ -82,6 +83,7 @@
             Controls.Add(label1);
             Font = new Font("Segoe UI", 13F);
             FormBorderStyle = FormBorderStyle.FixedSingle;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(4);
             MaximizeBox = false;
             MinimizeBox = false;

@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TurboMgr));
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             downloadAFileToolStripMenuItem = new ToolStripMenuItem();
@@ -123,6 +124,7 @@
             Controls.Add(downloads);
             Controls.Add(menuStrip1);
             Font = new Font("Segoe UI", 13F);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
             Margin = new Padding(4);
             Name = "TurboMgr";
