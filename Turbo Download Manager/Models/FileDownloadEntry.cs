@@ -14,6 +14,10 @@ namespace Turbo_Download_Manager.Models
         public string FileName { get; set; }
         public string DownloadUrl { get; set; }
         public string SavePath { get; set; }
+        public bool HasCompleted { get; set; } = false;
+        public string ProgressPercent { get; set; }
         public DateTime StartDownloadDateTime { get; set; } = DateTime.Now;
+
+        public List<DownloadThreadEntry> DownloadThreadEntrys { get; set; } = new List<DownloadThreadEntry>();
     }
 }

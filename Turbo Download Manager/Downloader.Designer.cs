@@ -62,6 +62,7 @@
             btnPause.TabIndex = 2;
             btnPause.Text = "Pause";
             btnPause.UseVisualStyleBackColor = true;
+            btnPause.Click += btnPause_Click;
             // 
             // btnCancel
             // 

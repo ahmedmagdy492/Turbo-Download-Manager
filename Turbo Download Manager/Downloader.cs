@@ -5,9 +5,11 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Turbo_Download_Manager.Helpers;
+using Turbo_Download_Manager.Repository;
 
 namespace Turbo_Download_Manager
 {
@@ -17,9 +19,11 @@ namespace Turbo_Download_Manager
         private readonly HttpClient _httpClient;
         private readonly List<DownloadJob> _downloadJobs;
         private readonly string _tempFilesParentFolder = Environment.GetEnvironmentVariable("TEMP");
-        private readonly string _finalFileParentFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        private readonly string _finalFileParentFolder = Constants.FinalDownloadDirectory;
         private string _fileExtension = string.Empty;
         private bool _isTickEventProcessing = false;
+        private readonly IFileDownloadRepository _fileDownloadRepository;
+        private bool _isClosed = false;
 
         public Downloader(Uri downloadUri)
         {
@@ -30,6 +34,8 @@ namespace Turbo_Download_Manager
                 BaseAddress = _downloadUri
             };
             _downloadJobs = new List<DownloadJob>();
+            UnitOfWork unitOfWork = new UnitOfWork();
+            _fileDownloadRepository = unitOfWork.FileDownloadRepository;
         }
 
         private async Task DownloadChunck(DownloadMetaData chunckMetaData)
@@ -40,14 +46,14 @@ namespace Turbo_Download_Manager
             byte[] buffer = new byte[chunckMetaData.chunkLength];
             int lastSrcIndex = 0, curResponseLength = 0;
 
-            while (chunckMetaData.startByte < (start + chunckMetaData.chunkLength))
+            while (!chunckMetaData.cancellationTokenSource.IsCancellationRequested &&  chunckMetaData.startByte < (start + chunckMetaData.chunkLength))
             {
                 try
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, "");
-                    request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(chunckMetaData.startByte, chunckMetaData.startByte + Math.Min(BUFF_SIZE, (start + chunckMetaData.chunkLength) - chunckMetaData.startByte)-1);
+                    request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(chunckMetaData.startByte, chunckMetaData.startByte + Math.Min(BUFF_SIZE, (start + chunckMetaData.chunkLength) - chunckMetaData.startByte) - 1);
                     var response = await _httpClient.SendAsync(request);
-                    if(response.StatusCode == System.Net.HttpStatusCode.PartialContent)
+                    if (response.StatusCode == System.Net.HttpStatusCode.PartialContent)
                     {
                         byte[] temp = await response.Content.ReadAsByteArrayAsync();
                         curResponseLength = temp.Length;
@@ -56,34 +62,42 @@ namespace Turbo_Download_Manager
 
                         chunckMetaData.startByte += temp.Length;
                         progress = ((double)chunckMetaData.startByte - (double)start) / ((double)chunckMetaData.chunkLength) * 100.0;
-                        lblDownloadPrgrs.Invoke(new Action(() =>
+
+                        if(!_isClosed)
                         {
-                            lblDownloadPrgrs.Text = $"Downloading {Math.Round(progress, 2)}%";
-                        }));
-                        downloadProgressBar.Invoke(new Action(() =>
-                        {
-                            downloadProgressBar.Value = (int)Math.Round(progress, 2);
-                        }));
+                            lblDownloadPrgrs.Invoke(new Action(() =>
+                            {
+                                lblDownloadPrgrs.Text = $"Downloading {Math.Round(progress, 2)}%";
+                            }));
+                            downloadProgressBar.Invoke(new Action(() =>
+                            {
+                                downloadProgressBar.Value = (int)Math.Round(progress, 2);
+                            }));
+                        }
                     }
                     else
                     {
                         break;
                     }
                 }
+                catch (ObjectDisposedException) { }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error Occured while downloading the file: {ex.Message}, lastSrcIndex: {lastSrcIndex}, chuncLength: {chunckMetaData.chunkLength}, curResponseLength: {curResponseLength}", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Error Occured while downloading the file: {ex.Message}, {ex.StackTrace}", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
 
-            File.WriteAllBytes(chunckMetaData.fileName, buffer);
+            if(!chunckMetaData.cancellationTokenSource.IsCancellationRequested)
+            {
+                File.WriteAllBytes(chunckMetaData.fileName, buffer);
 
-            chunckMetaData.job.IsCompeleted = true;
+                chunckMetaData.job.IsCompeleted = true;
+            }
         }
 
         private async void Downloader_Load(object sender, EventArgs e)
         {
-            const int MAX_THREADS = 10;
+            int MAX_THREADS = 10;
             long totalLength = 1;
             double BUFF_SIZE = 4096;
 
@@ -95,6 +109,11 @@ namespace Turbo_Download_Manager
             {
                 totalLength = response.Content.Headers.ContentRange.Length ?? 1;
                 _fileExtension = Utils.GetAccurateExtension(Utils.GetExtensionFromMimeType(response.Content.Headers.ContentType.MediaType), _downloadUri.OriginalString);
+
+                if (totalLength <= Constants.MaxSizeBeforeChunking)
+                {
+                    MAX_THREADS = 1;
+                }
 
                 BUFF_SIZE = (double)totalLength / (double)MAX_THREADS;
 
@@ -116,13 +135,15 @@ namespace Turbo_Download_Manager
                         chunkLength = (int)Math.Round(BUFF_SIZE),
                         startByte = ((int)Math.Round(BUFF_SIZE)) * thread_counter,
                         fileName = Path.Combine(_tempFilesParentFolder, Guid.NewGuid().ToString("N")),
-                        job = downloadJob
+                        job = downloadJob,
+                        cancellationTokenSource = new CancellationTokenSource()
                     };
                     downloadJob.DownloadTask = Task.Run(() =>
                     {
                         DownloadChunck(chunckMetaData);
                     });
                     downloadJob.FileName = chunckMetaData.fileName;
+                    downloadJob.JobCancellationToken = chunckMetaData.cancellationTokenSource;
                     _downloadJobs.Add(downloadJob);
                 }
 
@@ -193,9 +214,35 @@ namespace Turbo_Download_Manager
             }
         }
 
+        private void CancelAllTasks()
+        {
+            foreach (var downloadJob in _downloadJobs)
+            {
+                if(!downloadJob.DownloadTask.IsCanceled)
+                {
+                    downloadJob.JobCancellationToken.Cancel();
+                }
+            }
+
+            downloadTasksTracker.Enabled = false;
+
+            _isClosed = true;
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            CancelAllTasks();
+        }
+
         private void btnCancel_Click(object sender, EventArgs e)
         {
+            CancelAllTasks();
             this.Close();
+        }
+
+        private void btnPause_Click(object sender, EventArgs e)
+        {
+            
         }
     }
 }

@@ -11,5 +11,6 @@ namespace Turbo_Download_Manager.Helpers
         public Task DownloadTask { get; set; }
         public string FileName { get; set; }
         public bool IsCompeleted { get; set; } = false;
+        public CancellationTokenSource JobCancellationToken { get; set; }
     }
 }

@@ -11,5 +11,6 @@ namespace Turbo_Download_Manager.Helpers
         public long startByte, chunkLength;
         public string fileName;
         public DownloadJob job;
+        public CancellationTokenSource cancellationTokenSource;
     };
 }

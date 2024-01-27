@@ -13,11 +13,10 @@ namespace Turbo_Download_Manager.Database
         public AppDBContext() { }
         public AppDBContext(DbContextOptions<AppDBContext> options) : base(options) { }
 
-        public virtual DbSet<FileDownloadEntry> Items
-        {
-            get;
-            set;
-        }
+        public virtual DbSet<FileDownloadEntry> FileDownloadEntries { get; set; }
+
+        public virtual DbSet<DownloadThreadEntry> DownloadThreadEntries { get; set; }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder.UseSqlite("Data Source=.\\Database\\downloads.db");
     }

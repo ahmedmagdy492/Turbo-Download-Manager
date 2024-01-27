@@ -20,23 +20,28 @@ namespace Turbo_Download_Manager.Repository
 
         public async Task<List<FileDownloadEntry>> GetDownloadsBy(int pageNo = 1, int pageSize = 10)
         {
-            return await _context.Items.Skip((pageNo - 1) * pageSize).Take(pageSize).ToListAsync();
+            return await _context.FileDownloadEntries.Skip((pageNo - 1) * pageSize).Take(pageSize).OrderByDescending(f => f.StartDownloadDateTime).ToListAsync();
         }
 
         public FileDownloadEntry CreateFileDownloadEntry(FileDownloadEntry entry)
         {
-            _context.Items.Add(entry);
+            _context.FileDownloadEntries.Add(entry);
             return entry;
+        }
+
+        public void UpdateFileDownloadEntry(FileDownloadEntry entry)
+        {
+            _context.Entry(entry).State = EntityState.Modified;
         }
 
         public async Task<List<FileDownloadEntry>> SearchByName(string name)
         {
-            return await _context.Items.Where(f => f.FileName.Contains(name)).ToListAsync();
+            return await _context.FileDownloadEntries.Where(f => f.FileName.Contains(name)).ToListAsync();
         }
 
         public FileDownloadEntry DeleteEntry(FileDownloadEntry entry)
         {
-            _context.Items.Remove(entry);
+            _context.FileDownloadEntries.Remove(entry);
             return entry;
         }
 

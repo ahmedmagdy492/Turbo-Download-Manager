@@ -15,10 +15,11 @@ namespace Turbo_Download_Manager
     public partial class AddDownload : Form
     {
         private readonly IFileDownloadRepository _fileDownloadRepository;
-        public AddDownload(IFileDownloadRepository fileDownloadRepository)
+        public AddDownload()
         {
             InitializeComponent();
-            _fileDownloadRepository = fileDownloadRepository;
+            UnitOfWork unitOfWork = new UnitOfWork();
+            _fileDownloadRepository = unitOfWork.FileDownloadRepository;
         }
 
         private async void btnDownload_Click(object sender, EventArgs e)
@@ -36,7 +37,7 @@ namespace Turbo_Download_Manager
                         FileName = Utils.GetFileName(url),
                         StartDownloadDateTime = DateTime.Now,
                         DownloadUrl = downloadLink,
-                        SavePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads")
+                        SavePath = Constants.FinalDownloadDirectory
                     });
                     var result = await _fileDownloadRepository.SaveChanges();
                     this.Close();

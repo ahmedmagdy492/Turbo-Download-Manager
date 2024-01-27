@@ -6,19 +6,18 @@ namespace Turbo_Download_Manager
 {
     public partial class TurboMgr : Form
     {
-        private readonly AppDBContext _appDBContext;
         private readonly IFileDownloadRepository _fileDownloadRepository;
 
         public TurboMgr()
         {
             InitializeComponent();
-            _appDBContext = new AppDBContext();
-            _fileDownloadRepository = new FileDownloadRepository(_appDBContext);
+            UnitOfWork unitOfWork = new UnitOfWork();
+            _fileDownloadRepository = unitOfWork.FileDownloadRepository;
         }
 
         private void downloadAFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AddDownload addDownload = new AddDownload(_fileDownloadRepository);
+            AddDownload addDownload = new AddDownload();
             addDownload.Show();
         }
 

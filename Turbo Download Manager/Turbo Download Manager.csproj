@@ -23,6 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Database\downloads.db">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
