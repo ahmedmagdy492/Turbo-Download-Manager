@@ -32,7 +32,6 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Downloader));
             lblDownloadPrgrs = new Label();
             downloadProgressBar = new ProgressBar();
-            btnPause = new Button();
             btnCancel = new Button();
             downloadTasksTracker = new System.Windows.Forms.Timer(components);
             lblThreadsCount = new Label();
@@ -53,16 +52,6 @@
             downloadProgressBar.Name = "downloadProgressBar";
             downloadProgressBar.Size = new Size(755, 29);
             downloadProgressBar.TabIndex = 1;
-            // 
-            // btnPause
-            // 
-            btnPause.Location = new Point(563, 145);
-            btnPause.Name = "btnPause";
-            btnPause.Size = new Size(94, 38);
-            btnPause.TabIndex = 2;
-            btnPause.Text = "Pause";
-            btnPause.UseVisualStyleBackColor = true;
-            btnPause.Click += btnPause_Click;
             // 
             // btnCancel
             // 
@@ -96,7 +85,6 @@
             ClientSize = new Size(786, 205);
             Controls.Add(lblThreadsCount);
             Controls.Add(btnCancel);
-            Controls.Add(btnPause);
             Controls.Add(downloadProgressBar);
             Controls.Add(lblDownloadPrgrs);
             Font = new Font("Segoe UI", 13F);
@@ -116,7 +104,6 @@
 
         private Label lblDownloadPrgrs;
         private ProgressBar downloadProgressBar;
-        private Button btnPause;
         private Button btnCancel;
         private System.Windows.Forms.Timer downloadTasksTracker;
         private Label lblThreadsCount;

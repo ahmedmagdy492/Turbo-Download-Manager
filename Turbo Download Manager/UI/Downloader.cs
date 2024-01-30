@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Turbo_Download_Manager.Helpers;
+using Turbo_Download_Manager.Models;
 using Turbo_Download_Manager.Repository;
 
 namespace Turbo_Download_Manager
@@ -23,11 +24,61 @@ namespace Turbo_Download_Manager
         private string _fileExtension = string.Empty;
         private bool _isTickEventProcessing = false;
         private readonly IFileDownloadRepository _fileDownloadRepository;
-        private bool _isClosed = false;
+        private FileDownloadEntry _fileDownloadEntry;
+        private bool _isPaused = false;
+        private bool _execptionOccured = false;
+        private Exception _ex;
 
-        public Downloader(Uri downloadUri)
+        private readonly DownloadManager _downloadManager;
+
+        public Downloader(Uri downloadUri, FileDownloadEntry fileDownloadEntry)
         {
             InitializeComponent();
+
+            _downloadManager = DownloadManager.CreateDownloadManager();
+            _downloadManager.SubscribeToProgressUpdate(new Action<DownloadProgressInfo>((progressInfo) =>
+            {
+                try
+                {
+                    Invoke(new Action(() =>
+                    {
+                        Text = $"Downloaded {Math.Round(progressInfo.Progress, 2)}% of {Utils.GetFileName(_downloadUri)}";
+                    }));
+
+                    lblDownloadPrgrs.Invoke(new Action(() =>
+                    {
+                        lblDownloadPrgrs.Text = $"Downloaded {Math.Round(progressInfo.Progress, 2)}%";
+                    }));
+                    downloadProgressBar.Invoke(new Action(() =>
+                    {
+                        downloadProgressBar.Value = (int)Math.Round(progressInfo.Progress, 2);
+                    }));
+                    lblThreadsCount.Invoke(new Action(() =>
+                    {
+                        lblThreadsCount.Text = $"{progressInfo.CurrentByte/1024/1024}/{progressInfo.FileSize/1024/1024} MB";
+                    }));
+                }
+                catch { }
+            }));
+
+            _downloadManager.SubscribeToDownloadEnded(new Action(async () =>
+            {
+                try
+                {
+                    Invoke(new Action(() =>
+                    {
+                        DownloadComplete downloadComplete = new DownloadComplete(Constants.FinalDownloadDirectory, "");
+                        this.Close();
+                        downloadComplete.Show();
+                    }));
+                }
+                catch { }
+
+                _fileDownloadEntry.HasCompleted = true;
+                _fileDownloadRepository.UpdateFileDownloadEntry(_fileDownloadEntry);
+                await _fileDownloadRepository.SaveChanges();
+            }));
+
             _downloadUri = downloadUri;
             _httpClient = new HttpClient
             {
@@ -36,6 +87,7 @@ namespace Turbo_Download_Manager
             _downloadJobs = new List<DownloadJob>();
             UnitOfWork unitOfWork = new UnitOfWork();
             _fileDownloadRepository = unitOfWork.FileDownloadRepository;
+            _fileDownloadEntry = fileDownloadEntry;
         }
 
         private async Task DownloadChunck(DownloadMetaData chunckMetaData)
@@ -46,7 +98,7 @@ namespace Turbo_Download_Manager
             byte[] buffer = new byte[chunckMetaData.chunkLength];
             int lastSrcIndex = 0, curResponseLength = 0;
 
-            while (!chunckMetaData.cancellationTokenSource.IsCancellationRequested &&  chunckMetaData.startByte < (start + chunckMetaData.chunkLength))
+            while (!chunckMetaData.cancellationTokenSource.IsCancellationRequested && chunckMetaData.startByte < (start + chunckMetaData.chunkLength))
             {
                 try
                 {
@@ -63,31 +115,29 @@ namespace Turbo_Download_Manager
                         chunckMetaData.startByte += temp.Length;
                         progress = ((double)chunckMetaData.startByte - (double)start) / ((double)chunckMetaData.chunkLength) * 100.0;
 
-                        if(!_isClosed)
-                        {
-                            lblDownloadPrgrs.Invoke(new Action(() =>
-                            {
-                                lblDownloadPrgrs.Text = $"Downloading {Math.Round(progress, 2)}%";
-                            }));
-                            downloadProgressBar.Invoke(new Action(() =>
-                            {
-                                downloadProgressBar.Value = (int)Math.Round(progress, 2);
-                            }));
-                        }
+                        
                     }
                     else
                     {
                         break;
                     }
                 }
+                catch(HttpRequestException ex)
+                {
+                    chunckMetaData.cancellationTokenSource.Cancel();
+                    _execptionOccured = true;
+                    _ex = ex;
+                }
                 catch (ObjectDisposedException) { }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error Occured while downloading the file: {ex.Message}, {ex.StackTrace}", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    chunckMetaData.cancellationTokenSource.Cancel();
+                    _execptionOccured = true;
+                    _ex = ex;
                 }
             }
 
-            if(!chunckMetaData.cancellationTokenSource.IsCancellationRequested)
+            if (!chunckMetaData.cancellationTokenSource.IsCancellationRequested)
             {
                 File.WriteAllBytes(chunckMetaData.fileName, buffer);
 
@@ -95,14 +145,14 @@ namespace Turbo_Download_Manager
             }
         }
 
-        private async void Downloader_Load(object sender, EventArgs e)
+        private async Task StratDownloadProcess(int startingByte)
         {
             int MAX_THREADS = 10;
             long totalLength = 1;
             double BUFF_SIZE = 4096;
 
             var request = new HttpRequestMessage(HttpMethod.Head, "");
-            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(0, (int)BUFF_SIZE);
+            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(startingByte, (int)BUFF_SIZE);
             var response = await _httpClient.SendAsync(request);
 
             if (response.StatusCode == System.Net.HttpStatusCode.PartialContent)
@@ -117,17 +167,9 @@ namespace Turbo_Download_Manager
 
                 BUFF_SIZE = (double)totalLength / (double)MAX_THREADS;
 
-                lblThreadsCount.Invoke(new Action(() =>
-                {
-                    lblThreadsCount.Text = $"Threads Count: {MAX_THREADS}/File Size: {Math.Round(((double)totalLength) / 1024.0 / 1024.0, 2)} MB/File Type:  {_fileExtension}";
-                }));
+                
 
-                Invoke(new Action(() =>
-                {
-                    Text = $"Downloading {Utils.GetFileName(_downloadUri)}";
-                }));
-
-                for (int thread_counter = 0; thread_counter < MAX_THREADS; thread_counter++)
+                for (int thread_counter = startingByte; thread_counter < MAX_THREADS; thread_counter++)
                 {
                     var downloadJob = new DownloadJob();
                     var chunckMetaData = new DownloadMetaData
@@ -138,11 +180,12 @@ namespace Turbo_Download_Manager
                         job = downloadJob,
                         cancellationTokenSource = new CancellationTokenSource()
                     };
-                    downloadJob.DownloadTask = Task.Run(() =>
+                    downloadJob.DownloadTask = Task.Run(async () =>
                     {
-                        DownloadChunck(chunckMetaData);
+                        await DownloadChunck(chunckMetaData);
                     });
                     downloadJob.FileName = chunckMetaData.fileName;
+                    downloadJob.JobDownloadMetaData = chunckMetaData;
                     downloadJob.JobCancellationToken = chunckMetaData.cancellationTokenSource;
                     _downloadJobs.Add(downloadJob);
                 }
@@ -151,6 +194,7 @@ namespace Turbo_Download_Manager
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
+                // TODO: download the file from scratch or download the file without byte chuncking
                 MessageBox.Show("Error: The Server does not support byte chuncking", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 this.Close();
             }
@@ -161,8 +205,22 @@ namespace Turbo_Download_Manager
             }
         }
 
+        private async void Downloader_Load(object sender, EventArgs e)
+        {
+            _downloadManager.CreateNewDownload(_downloadUri.OriginalString);
+            await _downloadManager.StartDownload();
+        }
+
         private void downloadTasksTracker_Tick(object sender, EventArgs e)
         {
+            if(_execptionOccured)
+            {
+                _execptionOccured = false;
+                MessageBox.Show($"Error Occured while downloading the file: {_ex.Message}, {_ex.StackTrace}", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
+                return;
+            }
+
             if (!_isTickEventProcessing)
             {
                 if (_downloadJobs.Where(db => db.IsCompeleted).Count() == _downloadJobs.Count)
@@ -226,23 +284,18 @@ namespace Turbo_Download_Manager
 
             downloadTasksTracker.Enabled = false;
 
-            _isClosed = true;
+            _downloadJobs.Clear();
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
-            CancelAllTasks();
+            //CancelAllTasks();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
             CancelAllTasks();
             this.Close();
-        }
-
-        private void btnPause_Click(object sender, EventArgs e)
-        {
-            
         }
     }
 }

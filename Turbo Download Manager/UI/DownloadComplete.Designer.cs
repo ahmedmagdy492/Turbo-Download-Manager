@@ -33,12 +33,13 @@
             btnOk = new Button();
             btnClose = new Button();
             txtDownloadPath = new TextBox();
+            btnOpenFile = new Button();
             SuspendLayout();
             // 
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(42, 44);
+            label1.Location = new Point(201, 49);
             label1.Name = "label1";
             label1.Size = new Size(224, 30);
             label1.TabIndex = 0;
@@ -46,7 +47,7 @@
             // 
             // btnOk
             // 
-            btnOk.Location = new Point(39, 152);
+            btnOk.Location = new Point(45, 157);
             btnOk.Name = "btnOk";
             btnOk.Size = new Size(172, 49);
             btnOk.TabIndex = 1;
@@ -56,7 +57,7 @@
             // 
             // btnClose
             // 
-            btnClose.Location = new Point(217, 152);
+            btnClose.Location = new Point(410, 157);
             btnClose.Name = "btnClose";
             btnClose.Size = new Size(172, 49);
             btnClose.TabIndex = 2;
@@ -66,17 +67,28 @@
             // 
             // txtDownloadPath
             // 
-            txtDownloadPath.Location = new Point(42, 90);
+            txtDownloadPath.Location = new Point(48, 95);
             txtDownloadPath.Name = "txtDownloadPath";
             txtDownloadPath.ReadOnly = true;
-            txtDownloadPath.Size = new Size(347, 36);
+            txtDownloadPath.Size = new Size(534, 36);
             txtDownloadPath.TabIndex = 3;
+            // 
+            // btnOpenFile
+            // 
+            btnOpenFile.Location = new Point(232, 157);
+            btnOpenFile.Name = "btnOpenFile";
+            btnOpenFile.Size = new Size(172, 49);
+            btnOpenFile.TabIndex = 4;
+            btnOpenFile.Text = "Open File";
+            btnOpenFile.UseVisualStyleBackColor = true;
+            btnOpenFile.Click += btnOpenFile_Click;
             // 
             // DownloadComplete
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(429, 254);
+            ClientSize = new Size(627, 254);
+            Controls.Add(btnOpenFile);
             Controls.Add(txtDownloadPath);
             Controls.Add(btnClose);
             Controls.Add(btnOk);
@@ -102,5 +114,6 @@
         private Button btnOk;
         private Button btnClose;
         private TextBox txtDownloadPath;
+        private Button btnOpenFile;
     }
 }

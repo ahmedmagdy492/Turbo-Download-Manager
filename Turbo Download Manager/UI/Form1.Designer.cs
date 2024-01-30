@@ -35,6 +35,9 @@
             downloadAFileToolStripMenuItem = new ToolStripMenuItem();
             exitToolStripMenuItem1 = new ToolStripMenuItem();
             downloads = new DataGridView();
+            contextMenuStrip2 = new ContextMenuStrip(components);
+            restartDownloadToolStripMenuItem = new ToolStripMenuItem();
+            copyDownloadLinkToolStripMenuItem = new ToolStripMenuItem();
             notifyIcon1 = new NotifyIcon(components);
             contextMenuStrip1 = new ContextMenuStrip(components);
             showTurboToolStripMenuItem = new ToolStripMenuItem();
@@ -42,6 +45,7 @@
             exitToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)downloads).BeginInit();
+            contextMenuStrip2.SuspendLayout();
             contextMenuStrip1.SuspendLayout();
             SuspendLayout();
             // 
@@ -79,7 +83,9 @@
             // downloads
             // 
             downloads.AllowUserToAddRows = false;
+            downloads.BackgroundColor = SystemColors.ButtonHighlight;
             downloads.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            downloads.ContextMenuStrip = contextMenuStrip2;
             downloads.Dock = DockStyle.Fill;
             downloads.Location = new Point(0, 28);
             downloads.Name = "downloads";
@@ -87,6 +93,28 @@
             downloads.RowHeadersWidth = 51;
             downloads.Size = new Size(928, 405);
             downloads.TabIndex = 1;
+            // 
+            // contextMenuStrip2
+            // 
+            contextMenuStrip2.ImageScalingSize = new Size(20, 20);
+            contextMenuStrip2.Items.AddRange(new ToolStripItem[] { restartDownloadToolStripMenuItem, copyDownloadLinkToolStripMenuItem });
+            contextMenuStrip2.Name = "contextMenuStrip2";
+            contextMenuStrip2.Size = new Size(216, 52);
+            contextMenuStrip2.Opening += contextMenuStrip2_Opening;
+            // 
+            // restartDownloadToolStripMenuItem
+            // 
+            restartDownloadToolStripMenuItem.Name = "restartDownloadToolStripMenuItem";
+            restartDownloadToolStripMenuItem.Size = new Size(215, 24);
+            restartDownloadToolStripMenuItem.Text = "Restart Download";
+            restartDownloadToolStripMenuItem.Click += restartDownloadToolStripMenuItem_Click;
+            // 
+            // copyDownloadLinkToolStripMenuItem
+            // 
+            copyDownloadLinkToolStripMenuItem.Name = "copyDownloadLinkToolStripMenuItem";
+            copyDownloadLinkToolStripMenuItem.Size = new Size(215, 24);
+            copyDownloadLinkToolStripMenuItem.Text = "Copy Download Link";
+            copyDownloadLinkToolStripMenuItem.Click += copyDownloadLinkToolStripMenuItem_Click;
             // 
             // notifyIcon1
             // 
@@ -142,6 +170,7 @@
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)downloads).EndInit();
+            contextMenuStrip2.ResumeLayout(false);
             contextMenuStrip1.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
@@ -159,5 +188,8 @@
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripMenuItem exitToolStripMenuItem;
         private ToolStripMenuItem exitToolStripMenuItem1;
+        private ContextMenuStrip contextMenuStrip2;
+        private ToolStripMenuItem restartDownloadToolStripMenuItem;
+        private ToolStripMenuItem copyDownloadLinkToolStripMenuItem;
     }
 }

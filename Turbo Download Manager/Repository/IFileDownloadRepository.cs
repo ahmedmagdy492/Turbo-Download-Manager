@@ -8,7 +8,7 @@ namespace Turbo_Download_Manager.Repository
         FileDownloadEntry DeleteEntry(FileDownloadEntry entry);
         Task<List<FileDownloadEntry>> GetDownloadsBy(int pageNo = 1, int pageSize = 10);
         Task<bool> SaveChanges();
-        Task<List<FileDownloadEntry>> SearchByName(string name);
+        Task<FileDownloadEntry> SearchByFileId(string fileId);
         void UpdateFileDownloadEntry(FileDownloadEntry entry);
     }
 }

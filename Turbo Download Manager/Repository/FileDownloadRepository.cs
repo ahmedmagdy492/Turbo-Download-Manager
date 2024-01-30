@@ -34,9 +34,9 @@ namespace Turbo_Download_Manager.Repository
             _context.Entry(entry).State = EntityState.Modified;
         }
 
-        public async Task<List<FileDownloadEntry>> SearchByName(string name)
+        public async Task<FileDownloadEntry> SearchByFileId(string fileId)
         {
-            return await _context.FileDownloadEntries.Where(f => f.FileName.Contains(name)).ToListAsync();
+            return await _context.FileDownloadEntries.FirstOrDefaultAsync(f => f.FileId == fileId);
         }
 
         public FileDownloadEntry DeleteEntry(FileDownloadEntry entry)

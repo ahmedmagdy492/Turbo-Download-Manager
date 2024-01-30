@@ -43,5 +43,16 @@ namespace Turbo_Download_Manager
         {
             txtDownloadPath.Text = Path.Combine(_downloadFolder, _fileName);
         }
+
+        private void btnOpenFile_Click(object sender, EventArgs e)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = Path.Combine(_downloadFolder, _fileName),
+                UseShellExecute = false,
+            });
+            this.Close();
+        }
     }
 }

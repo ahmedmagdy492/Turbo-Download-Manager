@@ -15,6 +15,8 @@ namespace Turbo_Download_Manager
     public partial class AddDownload : Form
     {
         private readonly IFileDownloadRepository _fileDownloadRepository;
+        public Action _onAddingDownload = null;
+
         public AddDownload()
         {
             InitializeComponent();
@@ -31,8 +33,7 @@ namespace Turbo_Download_Manager
                 try
                 {
                     var url = new Uri(downloadLink);
-                    Downloader downloader = new Downloader(url);
-                    _fileDownloadRepository.CreateFileDownloadEntry(new Models.FileDownloadEntry
+                    var fileDownloadEntry = _fileDownloadRepository.CreateFileDownloadEntry(new Models.FileDownloadEntry
                     {
                         FileName = Utils.GetFileName(url),
                         StartDownloadDateTime = DateTime.Now,
@@ -40,7 +41,12 @@ namespace Turbo_Download_Manager
                         SavePath = Constants.FinalDownloadDirectory
                     });
                     var result = await _fileDownloadRepository.SaveChanges();
+                    if(_onAddingDownload != null)
+                    {
+                        _onAddingDownload();
+                    }
                     this.Close();
+                    Downloader downloader = new Downloader(url, fileDownloadEntry);
                     downloader.Show();
                 }
                 catch(UriFormatException)
