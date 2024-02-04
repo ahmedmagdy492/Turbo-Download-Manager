@@ -35,6 +35,7 @@
             btnCancel = new Button();
             downloadTasksTracker = new System.Windows.Forms.Timer(components);
             lblThreadsCount = new Label();
+            overallProgress = new ProgressBar();
             SuspendLayout();
             // 
             // lblDownloadPrgrs
@@ -48,14 +49,14 @@
             // 
             // downloadProgressBar
             // 
-            downloadProgressBar.Location = new Point(19, 91);
+            downloadProgressBar.Location = new Point(12, 153);
             downloadProgressBar.Name = "downloadProgressBar";
             downloadProgressBar.Size = new Size(755, 29);
             downloadProgressBar.TabIndex = 1;
             // 
             // btnCancel
             // 
-            btnCancel.Location = new Point(680, 145);
+            btnCancel.Location = new Point(680, 210);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new Size(94, 38);
             btnCancel.TabIndex = 3;
@@ -72,17 +73,25 @@
             // 
             lblThreadsCount.AutoSize = true;
             lblThreadsCount.Font = new Font("Segoe UI", 11F);
-            lblThreadsCount.Location = new Point(19, 123);
+            lblThreadsCount.Location = new Point(12, 185);
             lblThreadsCount.Name = "lblThreadsCount";
-            lblThreadsCount.Size = new Size(154, 25);
+            lblThreadsCount.Size = new Size(110, 25);
             lblThreadsCount.TabIndex = 4;
-            lblThreadsCount.Text = "Threads Count: 0";
+            lblThreadsCount.Text = "0 MB/ 0 MB";
+            // 
+            // overallProgress
+            // 
+            overallProgress.Location = new Point(12, 88);
+            overallProgress.Name = "overallProgress";
+            overallProgress.Size = new Size(755, 29);
+            overallProgress.TabIndex = 5;
             // 
             // Downloader
             // 
             AutoScaleDimensions = new SizeF(12F, 30F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(786, 205);
+            ClientSize = new Size(786, 260);
+            Controls.Add(overallProgress);
             Controls.Add(lblThreadsCount);
             Controls.Add(btnCancel);
             Controls.Add(downloadProgressBar);
@@ -107,5 +116,6 @@
         private Button btnCancel;
         private System.Windows.Forms.Timer downloadTasksTracker;
         private Label lblThreadsCount;
+        private ProgressBar overallProgress;
     }
 }

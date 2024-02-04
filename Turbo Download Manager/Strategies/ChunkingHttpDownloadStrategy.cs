@@ -108,7 +108,9 @@ namespace Turbo_Download_Manager.Strategies
                 progressSubscriber(new DownloadProgressInfo {
                     Progress = Math.Floor(progress * 100),
                     FileSize = downloadGroup.FileSize,
-                    CurrentByte = downloadGroup.CurrentByte
+                    CurrentByte = downloadGroup.CurrentByte,
+                    DownloadGroupsCount = _downloadGroups.Count,
+                    CurrentDownloadMediaType = currentDownloadMimeType
                 });
             }
 
@@ -116,14 +118,7 @@ namespace Turbo_Download_Manager.Strategies
             bw.Write(content);
             bw.Close();
 
-            //downloadGroup.Logger.LogWarning($"Current Byte: {downloadGroup.CurrentByte}, Response Length: {content.Length}, FileSize: {downloadGroup.FileSize}");
-
             downloadGroup.CurrentByte += content.Length;
-
-            //if(!downloadGroup.CancellationToken.IsCancellationRequested && downloadGroup.CurrentByte < (downloadGroup.StartByte + downloadGroup.FileSize))
-            //{
-            //    await DownloadInChunks(downloadGroup);
-            //}
 
             if (!downloadGroup.CancellationToken.IsCancellationRequested && downloadGroup.CurrentByte < downloadGroup.FileSize)
             {

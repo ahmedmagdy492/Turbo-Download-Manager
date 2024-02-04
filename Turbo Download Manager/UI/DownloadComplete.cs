@@ -42,6 +42,14 @@ namespace Turbo_Download_Manager
         private void DownloadComplete_Load(object sender, EventArgs e)
         {
             txtDownloadPath.Text = Path.Combine(_downloadFolder, _fileName);
+            if(string.IsNullOrWhiteSpace(_fileName))
+            {
+                btnOpenFile.Enabled = false;
+            }
+            else
+            {
+                btnOpenFile.Enabled = true;
+            }
         }
 
         private void btnOpenFile_Click(object sender, EventArgs e)

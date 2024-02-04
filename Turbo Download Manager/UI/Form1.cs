@@ -10,6 +10,8 @@ namespace Turbo_Download_Manager
     {
         private readonly IFileDownloadRepository _fileDownloadRepository;
 
+        private AddDownload _addDownloadForm = null;
+
         public TurboMgr()
         {
             InitializeComponent();
@@ -50,15 +52,19 @@ namespace Turbo_Download_Manager
 
         private void downloadAFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            AddDownload addDownload = new AddDownload();
-            addDownload._onAddingDownload += () =>
+            if(_addDownloadForm == null)
+            {
+                _addDownloadForm = new AddDownload();
+            }
+
+            _addDownloadForm._onAddingDownload += () =>
             {
                 downloads.Invoke(new Action(async () =>
                 {
                     await GetAndAppendFileDownloadEntries();
                 }));
             };
-            addDownload.Show();
+            _addDownloadForm.Show();
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)

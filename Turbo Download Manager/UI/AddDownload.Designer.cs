@@ -77,6 +77,7 @@
             Name = "AddDownload";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Download a File";
+            TopMost = true;
             ResumeLayout(false);
             PerformLayout();
         }

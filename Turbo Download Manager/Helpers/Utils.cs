@@ -103,6 +103,7 @@ namespace Turbo_Download_Manager.Helpers
                 case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
                     return ".pptx";
                 case "application/vnd.rar":
+                case "application/x-rar-compressed":
                     return ".rar";
                 case "application/rtf":
                     return ".rtf";
@@ -130,6 +131,8 @@ namespace Turbo_Download_Manager.Helpers
                     return ".zip";
                 case "application/x-7z-compressed":
                     return ".7z";
+                case "application/x-iso9660-image":
+                    return ".iso";
             }
 
             return "";

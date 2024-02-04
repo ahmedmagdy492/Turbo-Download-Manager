@@ -28,8 +28,15 @@ namespace Turbo_Download_Manager
         private bool _isPaused = false;
         private bool _execptionOccured = false;
         private Exception _ex;
+        private string curMediaType;
 
         private readonly DownloadManager _downloadManager;
+
+        private double CalcOverallProgress(double smallProgress, int noOfGroups)
+        {
+            double progress = smallProgress/(double)noOfGroups;
+            return progress;
+        }
 
         public Downloader(Uri downloadUri, FileDownloadEntry fileDownloadEntry)
         {
@@ -55,6 +62,7 @@ namespace Turbo_Download_Manager
             {
                 try
                 {
+                    curMediaType = progressInfo.CurrentDownloadMediaType;
                     Invoke(new Action(() =>
                     {
                         Text = $"Downloaded {Math.Round(progressInfo.Progress, 2)}% of {Utils.GetFileName(_downloadUri)}";
@@ -62,7 +70,11 @@ namespace Turbo_Download_Manager
 
                     lblDownloadPrgrs.Invoke(new Action(() =>
                     {
-                        lblDownloadPrgrs.Text = $"Downloaded {Math.Round(progressInfo.Progress, 2)}%";
+                        lblDownloadPrgrs.Text = $"Downloaded {Math.Floor(CalcOverallProgress(progressInfo.Progress, progressInfo.DownloadGroupsCount))}%";
+                    }));
+                    overallProgress.Invoke(new Action(() =>
+                    {
+                        overallProgress.Value = (int)Math.Floor(CalcOverallProgress(progressInfo.Progress, progressInfo.DownloadGroupsCount));
                     }));
                     downloadProgressBar.Invoke(new Action(() =>
                     {
@@ -82,7 +94,9 @@ namespace Turbo_Download_Manager
                 {
                     Invoke(new Action(() =>
                     {
-                        DownloadComplete downloadComplete = new DownloadComplete(Constants.FinalDownloadDirectory, "");
+                        string fileName = Utils.GetFileName(_downloadUri);
+                        string fullPath = Path.Combine(Constants.FinalDownloadDirectory, fileName + Utils.GetAccurateExtension(Utils.GetExtensionFromMimeType(curMediaType), fileName));
+                        DownloadComplete downloadComplete = new DownloadComplete(Constants.FinalDownloadDirectory, fullPath);
                         this.Close();
                         downloadComplete.Show();
                     }));

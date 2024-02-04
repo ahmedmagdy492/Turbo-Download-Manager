@@ -11,5 +11,7 @@ namespace Turbo_Download_Manager.Helpers
         public double Progress { get; set; }
         public long CurrentByte { get; set; }
         public long FileSize { get; set; }
+        public int DownloadGroupsCount { get; set; }
+        public string CurrentDownloadMediaType { get; set; }
     }
 }
