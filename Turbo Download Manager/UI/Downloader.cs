@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+﻿using System.Data;
 using Turbo_Download_Manager.Helpers;
 using Turbo_Download_Manager.Models;
 using Turbo_Download_Manager.Repository;
@@ -118,6 +109,7 @@ namespace Turbo_Download_Manager
             _fileDownloadEntry = fileDownloadEntry;
         }
 
+        #region old downloading mechanism
         private async Task DownloadChunck(DownloadMetaData chunckMetaData)
         {
             double progress = 0;
@@ -233,15 +225,9 @@ namespace Turbo_Download_Manager
             }
         }
 
-        private async void Downloader_Load(object sender, EventArgs e)
-        {
-            _downloadManager.CreateNewDownload(_downloadUri.OriginalString);
-            await _downloadManager.StartDownload();
-        }
-
         private void downloadTasksTracker_Tick(object sender, EventArgs e)
         {
-            if(_execptionOccured)
+            if (_execptionOccured)
             {
                 _execptionOccured = false;
                 MessageBox.Show($"Error Occured while downloading the file: {_ex.Message}, {_ex.StackTrace}", "Error Occured", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -304,7 +290,7 @@ namespace Turbo_Download_Manager
         {
             foreach (var downloadJob in _downloadJobs)
             {
-                if(!downloadJob.DownloadTask.IsCanceled)
+                if (!downloadJob.DownloadTask.IsCanceled)
                 {
                     downloadJob.JobCancellationToken.Cancel();
                 }
@@ -313,6 +299,13 @@ namespace Turbo_Download_Manager
             downloadTasksTracker.Enabled = false;
 
             _downloadJobs.Clear();
+        }
+        #endregion
+
+        private async void Downloader_Load(object sender, EventArgs e)
+        {
+            _downloadManager.CreateNewDownload(_downloadUri.OriginalString);
+            await _downloadManager.StartDownload();
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
