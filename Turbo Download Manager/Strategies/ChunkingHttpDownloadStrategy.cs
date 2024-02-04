@@ -110,7 +110,8 @@ namespace Turbo_Download_Manager.Strategies
                     FileSize = downloadGroup.FileSize,
                     CurrentByte = downloadGroup.CurrentByte,
                     DownloadGroupsCount = _downloadGroups.Count,
-                    CurrentDownloadMediaType = currentDownloadMimeType
+                    CurrentDownloadMediaType = currentDownloadMimeType,
+                    TotalDownloadLength = _downloadFileSize
                 });
             }
 
@@ -163,7 +164,7 @@ namespace Turbo_Download_Manager.Strategies
 
                 if(File.Exists(fullPath))
                 {
-                    fileName = fileName + Guid.NewGuid().ToString("N")[10..];
+                    fileName = fileName + Guid.NewGuid().ToString("N")[7..];
                     fullPath = Path.Combine(Constants.FinalDownloadDirectory, fileName + fileExtension);
                 }                
 

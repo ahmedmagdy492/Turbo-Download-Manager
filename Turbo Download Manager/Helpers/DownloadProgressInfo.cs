@@ -13,5 +13,6 @@ namespace Turbo_Download_Manager.Helpers
         public long FileSize { get; set; }
         public int DownloadGroupsCount { get; set; }
         public string CurrentDownloadMediaType { get; set; }
+        public long TotalDownloadLength { get; set; }
     }
 }

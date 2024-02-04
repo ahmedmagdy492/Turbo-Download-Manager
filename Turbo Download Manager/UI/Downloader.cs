@@ -32,10 +32,9 @@ namespace Turbo_Download_Manager
 
         private readonly DownloadManager _downloadManager;
 
-        private double CalcOverallProgress(double smallProgress, int noOfGroups)
+        private double CalcOverallProgress(double curByte, long totalFileSize)
         {
-            double progress = smallProgress/(double)noOfGroups;
-            return progress;
+            return curByte / (double)totalFileSize * 100;
         }
 
         public Downloader(Uri downloadUri, FileDownloadEntry fileDownloadEntry)
@@ -70,11 +69,11 @@ namespace Turbo_Download_Manager
 
                     lblDownloadPrgrs.Invoke(new Action(() =>
                     {
-                        lblDownloadPrgrs.Text = $"Downloaded {Math.Floor(CalcOverallProgress(progressInfo.Progress, progressInfo.DownloadGroupsCount))}%";
+                        lblDownloadPrgrs.Text = $"Downloaded {Math.Floor(CalcOverallProgress(progressInfo.CurrentByte, progressInfo.TotalDownloadLength))}%";
                     }));
                     overallProgress.Invoke(new Action(() =>
                     {
-                        overallProgress.Value = (int)Math.Floor(CalcOverallProgress(progressInfo.Progress, progressInfo.DownloadGroupsCount));
+                        overallProgress.Value = (int)Math.Floor(CalcOverallProgress(progressInfo.CurrentByte, progressInfo.TotalDownloadLength));
                     }));
                     downloadProgressBar.Invoke(new Action(() =>
                     {

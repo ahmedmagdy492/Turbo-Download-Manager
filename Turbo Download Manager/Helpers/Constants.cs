@@ -13,5 +13,6 @@ namespace Turbo_Download_Manager.Helpers
         //public const long MaxFileSizeBeforeDividingToGroups = 5368709120; // 5 GB
         public const long MaxFileSizeBeforeDividingToGroups = 734003200; // 700 MB for Testing
         public static readonly string FinalDownloadDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        public const int MAX_FILENAME_LENGTH = 255;
     }
 }
