@@ -28,12 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Downloader));
             lblDownloadPrgrs = new Label();
             downloadProgressBar = new ProgressBar();
             btnCancel = new Button();
-            downloadTasksTracker = new System.Windows.Forms.Timer(components);
             lblThreadsCount = new Label();
             overallProgress = new ProgressBar();
             SuspendLayout();
@@ -63,11 +61,6 @@
             btnCancel.Text = "Cancel";
             btnCancel.UseVisualStyleBackColor = true;
             btnCancel.Click += btnCancel_Click;
-            // 
-            // downloadTasksTracker
-            // 
-            downloadTasksTracker.Interval = 1000;
-            downloadTasksTracker.Tick += downloadTasksTracker_Tick;
             // 
             // lblThreadsCount
             // 
@@ -114,7 +107,6 @@
         private Label lblDownloadPrgrs;
         private ProgressBar downloadProgressBar;
         private Button btnCancel;
-        private System.Windows.Forms.Timer downloadTasksTracker;
         private Label lblThreadsCount;
         private ProgressBar overallProgress;
     }
