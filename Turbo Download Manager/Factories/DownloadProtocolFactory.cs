@@ -14,14 +14,14 @@ namespace Turbo_Download_Manager.Factories
     {
         private static string[] supportedProtocols = ["http", "https"];
 
-        public static Protocols.IDownloadProtocol CreateDownloadProtocol(string url, List<Action<DownloadProgressInfo>> progressUpdateSubscribers, List<Action> downloadEndedSubscribers)
+        public static Protocols.IDownloadProtocol CreateDownloadProtocol(string url, List<Action<DownloadProgressInfo>> progressUpdateSubscribers, List<Action> downloadEndedSubscribers, List<Action<DownloadCancelInfo>> onDownloadCancelSubscribers)
         {
             string protocol = new Uri(url).Scheme;
 
             if (protocol.StartsWith("http"))
             {
                 // http or https
-                return new HttpDownloadProtocol(url, progressUpdateSubscribers, downloadEndedSubscribers);
+                return new HttpDownloadProtocol(url, progressUpdateSubscribers, downloadEndedSubscribers, onDownloadCancelSubscribers);
             }
 
             throw new UnSupportedProtocolException($"The protocol given in the url {url} is not supported");

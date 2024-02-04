@@ -9,5 +9,6 @@ namespace Turbo_Download_Manager.Strategies
     public interface IDownloadStrategy
     {
         Task Download();
+        void Cancel();
     }
 }

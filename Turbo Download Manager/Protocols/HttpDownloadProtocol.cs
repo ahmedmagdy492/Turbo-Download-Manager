@@ -17,11 +17,13 @@ namespace Turbo_Download_Manager.Protocols
         private readonly HttpClient _httpClient;
         List<Action<DownloadProgressInfo>> _progressUpdateSubscribers;
         List<Action> _downloadEndedSubscribers;
+        List<Action<DownloadCancelInfo>> _onCancelDownloadSubscribers;
 
-        public HttpDownloadProtocol(string url, List<Action<DownloadProgressInfo>> progressUpdateSubscribers, List<Action> downloadEndedSubscribers)
+        public HttpDownloadProtocol(string url, List<Action<DownloadProgressInfo>> progressUpdateSubscribers, List<Action> downloadEndedSubscribers, List<Action<DownloadCancelInfo>> onCancelDownloadSubscribers)
         {
             _progressUpdateSubscribers = progressUpdateSubscribers;
             _downloadEndedSubscribers = downloadEndedSubscribers;
+            _onCancelDownloadSubscribers = onCancelDownloadSubscribers;
 
             _httpClient = new HttpClient
             {
@@ -55,9 +57,14 @@ namespace Turbo_Download_Manager.Protocols
                 throw new InsuffcientDiskSpaceException($"File size {fileSize/1024/1024} MB is larger than available disk space in {Constants.FinalDownloadDirectory}");
             }
 
+            if(response.StatusCode == System.Net.HttpStatusCode.MovedPermanently || response.StatusCode == System.Net.HttpStatusCode.Redirect)
+            {
+                // TODO: call a function to calls itself recursively to finally get the url to download the file from
+            }
+
             if (response.StatusCode == System.Net.HttpStatusCode.PartialContent)
             {
-                return new ChunkingHttpDownloadStrategy(fileSize, _httpClient.BaseAddress.OriginalString, _progressUpdateSubscribers, _downloadEndedSubscribers);
+                return new ChunkingHttpDownloadStrategy(fileSize, _httpClient.BaseAddress.OriginalString, _progressUpdateSubscribers, _downloadEndedSubscribers, _onCancelDownloadSubscribers);
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.OK)
             {
@@ -71,6 +78,11 @@ namespace Turbo_Download_Manager.Protocols
         {
             _downloadStrategy = await DetermineDownloadStrategy();
             await _downloadStrategy.Download();
+        }
+
+        public void CancelDownload()
+        {
+            _downloadStrategy.Cancel();
         }
     }
 }

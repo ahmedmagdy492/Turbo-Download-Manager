@@ -25,53 +25,62 @@ namespace Turbo_Download_Manager.Strategies
             _downloadEndedSubscribers = downloadEndedSubscribers;
         }
 
-        public async Task Download()
+        public void Cancel()
         {
-            foreach(var subscriber in _progressUpdateSubscribers)
+            
+        }
+
+        public Task Download()
+        {
+            return Task.Run(async () =>
             {
-                subscriber(new DownloadProgressInfo {
-                    Progress = 0.0
-                });
-            }
-
-            HttpResponseMessage response = await _httpClient.GetAsync("");
-
-            response.EnsureSuccessStatusCode();
-
-            foreach (var subscriber in _progressUpdateSubscribers)
-            {
-                subscriber(new DownloadProgressInfo
+                foreach (var subscriber in _progressUpdateSubscribers)
                 {
-                    Progress = 50.0
-                });
-            }
+                    subscriber(new DownloadProgressInfo
+                    {
+                        Progress = 0.0
+                    });
+                }
 
-            string fileName = Utils.GetFileName(_httpClient.BaseAddress);
-            string fileExtension = Utils.GetAccurateExtension(Utils.GetExtensionFromMimeType(response.Content.Headers.ContentType.MediaType), _httpClient.BaseAddress.OriginalString);
+                HttpResponseMessage response = await _httpClient.GetAsync("");
 
-            string fullPath = Path.Combine(Constants.FinalDownloadDirectory, fileName + fileExtension);
+                response.EnsureSuccessStatusCode();
 
-            var responseContent = await response.Content.ReadAsByteArrayAsync();
-
-            foreach (var subscriber in _progressUpdateSubscribers)
-            {
-                subscriber(new DownloadProgressInfo
+                foreach (var subscriber in _progressUpdateSubscribers)
                 {
-                    Progress = 75
-                });
-            }
+                    subscriber(new DownloadProgressInfo
+                    {
+                        Progress = 50.0
+                    });
+                }
 
-            File.WriteAllBytes(fullPath, responseContent);
+                string fileName = Utils.GetFileName(_httpClient.BaseAddress);
+                string fileExtension = Utils.GetAccurateExtension(Utils.GetExtensionFromMimeType(response.Content.Headers.ContentType.MediaType), _httpClient.BaseAddress.OriginalString);
 
-            foreach (var subscriber in _progressUpdateSubscribers)
-            {
-                subscriber(new DownloadProgressInfo { Progress = 100 });
-            }
+                string fullPath = Path.Combine(Constants.FinalDownloadDirectory, fileName + fileExtension);
 
-            foreach (var subscriber in _downloadEndedSubscribers)
-            {
-                subscriber();
-            }
+                var responseContent = await response.Content.ReadAsByteArrayAsync();
+
+                foreach (var subscriber in _progressUpdateSubscribers)
+                {
+                    subscriber(new DownloadProgressInfo
+                    {
+                        Progress = 75
+                    });
+                }
+
+                File.WriteAllBytes(fullPath, responseContent);
+
+                foreach (var subscriber in _progressUpdateSubscribers)
+                {
+                    subscriber(new DownloadProgressInfo { Progress = 100 });
+                }
+
+                foreach (var subscriber in _downloadEndedSubscribers)
+                {
+                    subscriber();
+                }
+            });
         }
     }
 }

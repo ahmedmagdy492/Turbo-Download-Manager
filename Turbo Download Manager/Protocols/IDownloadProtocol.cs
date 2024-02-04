@@ -9,5 +9,6 @@ namespace Turbo_Download_Manager.Protocols
     public interface IDownloadProtocol
     {
         Task Download();
+        void CancelDownload();
     }
 }

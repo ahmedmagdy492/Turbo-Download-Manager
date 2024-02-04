@@ -14,6 +14,7 @@ namespace Turbo_Download_Manager
     {
         private readonly List<Action<DownloadProgressInfo>> _progressUpdateSubscribers;
         private readonly List<Action> _downloadEndedSubscribers;
+        private readonly List<Action<DownloadCancelInfo>> _onDownloadCancelSubscribers;
         private static DownloadManager _instance;
         private IDownloadProtocol _downloadProtocol;
 
@@ -21,6 +22,7 @@ namespace Turbo_Download_Manager
         {
             _progressUpdateSubscribers = new List<Action<DownloadProgressInfo>>();
             _downloadEndedSubscribers = new List<Action>();
+            _onDownloadCancelSubscribers = new List<Action<DownloadCancelInfo>>();
         }
 
         public static DownloadManager CreateDownloadManager()
@@ -41,9 +43,19 @@ namespace Turbo_Download_Manager
             _downloadEndedSubscribers.Add(subscriber);
         }
 
+        public void SubscribeToDownloadCancel(Action<DownloadCancelInfo> subscriber)
+        {
+            _onDownloadCancelSubscribers.Add(subscriber);
+        }
+
         public void CreateNewDownload(string url)
         {
-            _downloadProtocol = DownloadProtocolFactory.CreateDownloadProtocol(url, _progressUpdateSubscribers, _downloadEndedSubscribers);
+            _downloadProtocol = DownloadProtocolFactory.CreateDownloadProtocol(url, _progressUpdateSubscribers, _downloadEndedSubscribers, _onDownloadCancelSubscribers);
+        }
+
+        public void CancelDownload()
+        {
+            _downloadProtocol.CancelDownload();
         }
 
         public Task StartDownload()

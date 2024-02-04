@@ -11,6 +11,7 @@ namespace Turbo_Download_Manager.Strategies
     public class ChunkingHttpDownloadStrategy : IDownloadStrategy
     {
         private readonly List<Action<DownloadProgressInfo>> _progressUpdateSubscribers;
+        private readonly List<Action<DownloadCancelInfo>> _onDownloadCancelSubscribers;
         private readonly List<Action> _downloadEndedSubscribers;
         private readonly HttpClient _httpClient;
         private readonly List<DownloadGroup> _downloadGroups;
@@ -20,10 +21,11 @@ namespace Turbo_Download_Manager.Strategies
         private const int chunkSize = 2097152;
         private string currentDownloadMimeType;
 
-        public ChunkingHttpDownloadStrategy(long downloadFileSize, string url, List<Action<DownloadProgressInfo>> progressUpdateSubscribers, List<Action> downloadEndedSubscribers)
+        public ChunkingHttpDownloadStrategy(long downloadFileSize, string url, List<Action<DownloadProgressInfo>> progressUpdateSubscribers, List<Action> downloadEndedSubscribers, List<Action<DownloadCancelInfo>> onDownloadCancel)
         {
             _downloadGroups = new List<DownloadGroup>();
             _downloadFileSize = downloadFileSize;
+            _onDownloadCancelSubscribers = onDownloadCancel;
 
             _progressUpdateSubscribers = progressUpdateSubscribers;
             _downloadEndedSubscribers = downloadEndedSubscribers;
@@ -62,14 +64,40 @@ namespace Turbo_Download_Manager.Strategies
             else
             {
                 // dividing into multiple groups
+                int noOfGroups = (int)Math.Ceiling((double)_downloadFileSize / (double)Constants.MaxFileSizeBeforeDividingToGroups);
+                long sizePerGroup = (int)Math.Ceiling((double)_downloadFileSize / (double)noOfGroups);
+
+                for(int i = 0; i < noOfGroups; i++)
+                {
+                    var downloadGroup = new DownloadGroup
+                    {
+                        IsCompleted = false,
+                        TempFilePath = Path.Combine(_tempDownloadDir, Guid.NewGuid().ToString("N")),
+                        StartByte = i * (sizePerGroup+1),
+                        CurrentByte = i * (sizePerGroup+1),
+                        FileSize = i * sizePerGroup + sizePerGroup,
+                        CancellationToken = new CancellationTokenSource(),
+                        Logger = new FileLogger(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"Group_{i}_log.log")),
+                        OnGroupDone = new Action(() =>
+                        {
+                            Download();
+                        })
+                    };
+                    _downloadGroups.Add(downloadGroup);
+                    downloadGroup.BackgroundTask = new Task(new Action(async () =>
+                    {
+                        await DownloadInChunks(downloadGroup);
+                    }),
+                    downloadGroup.CancellationToken.Token);
+                }
             }
         }
 
         private async Task DownloadInChunks(DownloadGroup downloadGroup)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, "");
-            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(downloadGroup.CurrentByte, downloadGroup.CurrentByte +
-                chunkSize);
+            request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(downloadGroup.CurrentByte, Math.Min(downloadGroup.CurrentByte +
+                chunkSize, downloadGroup.FileSize));
             var response = await _httpClient.SendAsync(request);
             currentDownloadMimeType = response.Content.Headers.ContentType.MediaType;
             var content = await response.Content.ReadAsByteArrayAsync();
@@ -84,23 +112,45 @@ namespace Turbo_Download_Manager.Strategies
                 });
             }
 
-            FileStream fs = new FileStream(downloadGroup.TempFilePath, FileMode.Append);
-            fs.Write(content, 0, content.Length);
-            fs.Close();
+            BinaryWriter bw = new BinaryWriter(new FileStream(downloadGroup.TempFilePath, FileMode.Append));
+            bw.Write(content);
+            bw.Close();
+
+            //downloadGroup.Logger.LogWarning($"Current Byte: {downloadGroup.CurrentByte}, Response Length: {content.Length}, FileSize: {downloadGroup.FileSize}");
 
             downloadGroup.CurrentByte += content.Length;
 
-            if(!downloadGroup.CancellationToken.IsCancellationRequested && downloadGroup.CurrentByte < (downloadGroup.StartByte + downloadGroup.FileSize))
+            //if(!downloadGroup.CancellationToken.IsCancellationRequested && downloadGroup.CurrentByte < (downloadGroup.StartByte + downloadGroup.FileSize))
+            //{
+            //    await DownloadInChunks(downloadGroup);
+            //}
+
+            if (!downloadGroup.CancellationToken.IsCancellationRequested && downloadGroup.CurrentByte < downloadGroup.FileSize)
             {
                 await DownloadInChunks(downloadGroup);
+            }
+            else if(downloadGroup.CancellationToken.IsCancellationRequested)
+            {
+                foreach(var downloadCancelSubscriber in _onDownloadCancelSubscribers)
+                {
+                    downloadCancelSubscriber(new DownloadCancelInfo
+                    {
+                        CurrentByte = downloadGroup.CurrentByte,
+                        FileSize = downloadGroup.FileSize,
+                        Progress = Math.Floor(progress * 100)
+                    });
+                }
             }
             else
             {
                 downloadGroup.OnGroupDone();
 
-                foreach(var downloadSubscriber in _downloadEndedSubscribers)
+                if(_downloadGroups.Where(g => g.IsCompleted).Count() == _downloadGroups.Count)
                 {
-                    downloadSubscriber();
+                    foreach (var downloadSubscriber in _downloadEndedSubscribers)
+                    {
+                        downloadSubscriber();
+                    }
                 }
             }
         }
@@ -116,23 +166,31 @@ namespace Turbo_Download_Manager.Strategies
 
                 string fullPath = Path.Combine(Constants.FinalDownloadDirectory, fileName + fileExtension);
 
-                if(!File.Exists(fullPath))
+                if(File.Exists(fullPath))
                 {
-                    File.Create(fullPath).Close();
-                }
-
-                var fs = new FileStream(fullPath, FileMode.Append);
+                    fileName = fileName + Guid.NewGuid().ToString("N")[10..];
+                    fullPath = Path.Combine(Constants.FinalDownloadDirectory, fileName + fileExtension);
+                }                
 
                 foreach(var downloadGroup in _downloadGroups)
                 {
+                    BinaryWriter bw = new BinaryWriter(new FileStream(fullPath, FileMode.Append));
                     var fileContent = File.ReadAllBytes(downloadGroup.TempFilePath);
-                    fs.Write(fileContent, 0, fileContent.Length);
+                    bw.Write(fileContent);
+                    downloadGroup.IsCompleted = true;
+                    bw.Close();
                 }
-
-                fs.Close();
             }
 
             return Task.CompletedTask;
+        }
+
+        public void Cancel()
+        {
+            foreach(var downloadGroup in _downloadGroups)
+            {
+                downloadGroup.CancellationToken.Cancel();
+            }
         }
     }
 }

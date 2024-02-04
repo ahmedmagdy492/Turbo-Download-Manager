@@ -36,6 +36,21 @@ namespace Turbo_Download_Manager
             InitializeComponent();
 
             _downloadManager = DownloadManager.CreateDownloadManager();
+            _downloadManager.SubscribeToDownloadCancel(new Action<DownloadCancelInfo>(async (cancelInfo) =>
+            {
+                try
+                {
+                    _fileDownloadEntry.HasCompleted = false;
+                    _fileDownloadEntry.ProgressPercent = $"{cancelInfo.Progress}%";
+                    _fileDownloadRepository.UpdateFileDownloadEntry(_fileDownloadEntry);
+                    await _fileDownloadRepository.SaveChanges();
+                    Invoke(new Action(() =>
+                    {
+                        this.Close();
+                    }));
+                }
+                catch { }
+            }));
             _downloadManager.SubscribeToProgressUpdate(new Action<DownloadProgressInfo>((progressInfo) =>
             {
                 try
@@ -55,7 +70,7 @@ namespace Turbo_Download_Manager
                     }));
                     lblThreadsCount.Invoke(new Action(() =>
                     {
-                        lblThreadsCount.Text = $"{progressInfo.CurrentByte/1024/1024}/{progressInfo.FileSize/1024/1024} MB";
+                        lblThreadsCount.Text = $"{progressInfo.CurrentByte/1024/1024} MB/{progressInfo.FileSize/1024/1024} MB";
                     }));
                 }
                 catch { }
@@ -294,8 +309,7 @@ namespace Turbo_Download_Manager
 
         private void btnCancel_Click(object sender, EventArgs e)
         {
-            CancelAllTasks();
-            this.Close();
+            _downloadManager.CancelDownload();
         }
     }
 }

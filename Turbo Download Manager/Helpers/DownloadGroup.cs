@@ -10,5 +10,6 @@
         public Task BackgroundTask { get; set; }
         public string TempFilePath { get; set; }
         public Action OnGroupDone { get; set; }
+        public ILogger Logger { get; set; }
     }
 }
