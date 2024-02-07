@@ -1,0 +1,33 @@
+{
+    "name": "Turbo Download Manager Extension",
+    "version": "1.0",
+    "description": "Uses the DOM Api to find videos with src files and downloadable links to let the user download them directly using The Turbo Download Manager App.",
+    "manifest_version": 3,
+    "background": {
+      "service_worker": "background.js"
+    },
+    "permissions": [
+      "activeTab"
+    ],
+    "action": {
+      "default_title": "Turbo Download Manager Extension",
+      "default_popup": "popup/popup.html",
+      "default_icon": {
+        "32": "icons/32.png",
+        "64": "icons/64.png",
+        "128": "icons/128.png",
+        "512": "icons/512.png"
+      }
+    },
+    "icons": {
+      "32": "icons/32.png",
+      "64": "icons/64.png",
+      "128": "icons/128.png",
+      "512": "icons/512.png"
+    },
+    "content_scripts": [{
+      "matches": ["https://*/*"],
+      "css": ["popup/popup.css"],
+      "js": ["popup/popup.js"]
+    }]
+  }

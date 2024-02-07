@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Security.Policy;
 using Turbo_Download_Manager.Helpers;
 using Turbo_Download_Manager.Models;
 using Turbo_Download_Manager.Repository;
@@ -107,6 +108,17 @@ namespace Turbo_Download_Manager
             UnitOfWork unitOfWork = new UnitOfWork();
             _fileDownloadRepository = unitOfWork.FileDownloadRepository;
             _fileDownloadEntry = fileDownloadEntry;
+
+            if(_fileDownloadEntry == null)
+            {
+                // downloading using the extension provided uri
+                _fileDownloadEntry = new FileDownloadEntry();
+                _fileDownloadEntry.DownloadUrl = _downloadUri.OriginalString;
+                _fileDownloadEntry.StartDownloadDateTime = DateTime.Now;
+                _fileDownloadEntry.FileName = Utils.GetFileName(_downloadUri);
+                _fileDownloadEntry.SavePath = Constants.FinalDownloadDirectory;
+                _fileDownloadEntry.HasCompleted = false;
+            }
         }
 
         #region old downloading mechanism

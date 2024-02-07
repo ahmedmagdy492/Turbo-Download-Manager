@@ -11,10 +11,18 @@ namespace Turbo_Download_Manager
         static void Main(string[] args)
         {
             StartupType startupType = StartupType.Normal;
-            if(args.Length == 1 && args[0] == "2")
+            string downloadUri = string.Empty;
+
+            if(args.Length == 2 && args[0] == "2")
             {
                 startupType = StartupType.Download;
+                downloadUri = args[1];
+                if(string.IsNullOrWhiteSpace(downloadUri))
+                {
+                    Environment.Exit(1);
+                }
             }
+
             ApplicationConfiguration.Initialize();
             
             if(startupType == StartupType.Normal)
@@ -23,7 +31,14 @@ namespace Turbo_Download_Manager
             }
             else
             {
-                //Application.Run(new Downloader());
+                try
+                {
+                    Application.Run(new Downloader(new Uri(downloadUri), null));
+                }
+                catch (Exception)
+                {
+                    Environment.Exit(2);
+                }
             }
         }
     }
